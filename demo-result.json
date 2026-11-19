@@ -1,0 +1,31 @@
+{
+  "api": "http://127.0.0.1:63705",
+  "walletId": "51e65677-d6e5-4c42-a6a0-8b8d2170b66e",
+  "externalTransactionId": "8e6b242f-5599-43a3-b589-9b476cd87757",
+  "replay": {
+    "status": "PROCESSED",
+    "balance": {
+      "amount": "20.00",
+      "currency": "BRL"
+    },
+    "transactionId": "58741cca-3bc8-4e24-8417-29dd3c7a3c2b",
+    "idempotentReplay": true
+  },
+  "reconciliation": {
+    "walletId": "51e65677-d6e5-4c42-a6a0-8b8d2170b66e",
+    "storedBalance": {
+      "amount": "20.00",
+      "currency": "BRL"
+    },
+    "calculatedBalance": {
+      "amount": "20.00",
+      "currency": "BRL"
+    },
+    "difference": {
+      "amount": "0.00",
+      "currency": "BRL"
+    },
+    "consistent": true,
+    "checkedEntries": 2
+  }
+}

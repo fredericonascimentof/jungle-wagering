@@ -1,0 +1,61 @@
+name: jungle-wagering-evaluation
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: jungle
+      POSTGRES_PASSWORD: jungle_local_only
+      POSTGRES_DB: jungle
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55433}:5432"
+    volumes:
+      - jungle_data:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/01-test.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jungle -d jungle"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  localstack:
+    image: localstack/localstack:4.0.3
+    environment:
+      SERVICES: sqs
+      SQS_ENDPOINT_STRATEGY: dynamic
+    ports:
+      - "127.0.0.1:4566:4566"
+    healthcheck:
+      test: ["CMD", "awslocal", "sqs", "list-queues"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+  migrate:
+    profiles: [app]
+    build: .
+    command: [bun, run, db:migrate]
+    environment:
+      DATABASE_URL: postgresql://jungle:jungle_local_only@postgres:5432/jungle
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    profiles: [app]
+    build: .
+    deploy:
+      replicas: 3
+    ports:
+      - "127.0.0.1::3000"
+    environment:
+      DATABASE_URL: postgresql://jungle:jungle_local_only@postgres:5432/jungle
+      SQS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      HOST: 0.0.0.0
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+    stop_grace_period: 45s
+volumes:
+  jungle_data:

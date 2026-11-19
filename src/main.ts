@@ -1,0 +1,21 @@
+import { connectDatabase } from './database/orm';
+import { createProcessorApp } from './processor/http';
+import { ProcessorService } from './processor/service';
+import { SqsBroker } from './processor/sqs';
+import { WorkerRunner } from './processor/workers';
+import { log } from './processor/observability';
+const orm = await connectDatabase();
+const broker = new SqsBroker();
+const app = await createProcessorApp(orm, broker);
+const workers = new WorkerRunner(new ProcessorService(orm), broker);
+if (process.env.WORKERS_ENABLED !== 'false') workers.start();
+let closing = false;
+const close = async () => {
+  if (closing) return;
+  closing = true;
+  await app.close(); await workers.stop(); broker.close(); await orm.close(true);
+};
+process.on('SIGINT', () => { void close(); });
+process.on('SIGTERM', () => { void close(); });
+await app.listen(Number(process.env.PORT ?? '3000'), process.env.HOST ?? '127.0.0.1');
+log('api_started');
